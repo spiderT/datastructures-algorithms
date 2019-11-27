@@ -1345,6 +1345,213 @@ public void countingSort(int[] a, int n) {
 
 基数排序对要排序的数据是有要求的，需要可以分割出独立的“位”来比较，而且位之间有递进的关系，如果 a 数据的高位比 b 数据大，那剩下的低位就不用比较了。除此之外，每一位的数据范围不能太大，要可以用线性排序算法来排序，否则，基数排序的时间复杂度就无法做到 O(n) 了。
 
+## 7. 二分查找
+
+二分查找（Binary Search）算法，也叫折半查找算法。
+
+假设有 1000 条订单数据，已经按照订单金额从小到大排序，每个订单金额都不同，并且最小单位是元。我们现在想知道是否存在金额等于 19 元的订单。如果存在，则返回订单数据，如果不存在则返回 null。
+
+假设只有 10 个订单，订单金额分别是：8，11，19，23，27，33，45，55，67，98。还是利用二分思想，每次都与区间的中间数据比对大小，缩小查找区间的范围。为了更加直观，我画了一张查找过程的图。其中，low 和 high 表示待查找区间的下标，mid 表示待查找区间的中间元素下标。
+
+![二分查找](images/binarySearch1.jpg)
+
+> 二分查找针对的是一个有序的数据集合，查找思想有点类似分治思想。每次都通过跟区间的中间元素对比，将待查找的区间缩小为之前的一半，直到找到要查找的元素，或者区间被缩小为 0。
+
+### 7.1. 时间复杂度O(logn) 
+
+我们假设数据大小是 n，每次查找后数据都会缩小为原来的一半，也就是会除以 2。最坏情况下，直到查找区间被缩小为空，才停止。
+
+![二分查找](images/binarySearch2.jpg)
+
+O(logn) 这种对数时间复杂度。这是一种极其高效的时间复杂度，有的时候甚至比时间复杂度是常量级 O(1) 的算法还要高效。为什么这么说呢？因为 logn 是一个非常“恐怖”的数量级，即便 n 非常非常大，对应的 logn 也很小。比如 n 等于 2 的 32 次方，这个数很大了吧？大约是 42 亿。也就是说，如果我们在 42 亿个数据中用二分查找一个数据，最多需要比较 32 次。
+
+### 7.2. 二分查找的递归与非递归实现
+
+```java
+
+public int bsearch(int[] a, int n, int value) {
+  int low = 0;
+  int high = n - 1;
+
+  while (low <= high) {
+    int mid = (low + high) / 2;
+    if (a[mid] == value) {
+      return mid;
+    } else if (a[mid] < value) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return -1;
+}
+```
+
+low、high、mid 都是指数组下标，其中 low 和 high 表示当前查找的区间范围，初始 low=0， high=n-1。mid 表示 [low, high] 的中间位置。我们通过对比 a[mid] 与 value 的大小，来更新接下来要查找的区间范围，直到找到或者区间缩小为 0，就退出。
+
+1. 循环退出条件
+
+注意是 low<=high，而不是 low<high。
+
+2. mid 的取值
+
+实际上，mid=(low+high)/2 这种写法是有问题的。因为如果 low 和 high 比较大的话，两者之和就有可能会溢出。改进的方法是将 mid 的计算方式写成 low+(high-low)/2。更进一步，如果要将性能优化到极致的话，我们可以将这里的除以 2 操作转化成位运算 low+((high-low)>>1)。因为相比除法运算来说，计算机处理位运算要快得多。
+
+3. low 和 high 的更新
+
+low=mid+1，high=mid-1。注意这里的 +1 和 -1，如果直接写成 low=mid 或者 high=mid，就可能会发生死循环。比如，当 high=3，low=3 时，如果 a[3] 不等于 value，就会导致一直循环不退出。
+
+```java
+
+// 二分查找的递归实现
+public int bsearch(int[] a, int n, int val) {
+  return bsearchInternally(a, 0, n - 1, val);
+}
+
+private int bsearchInternally(int[] a, int low, int high, int value) {
+  if (low > high) return -1;
+
+  int mid =  low + ((high - low) >> 1);
+  if (a[mid] == value) {
+    return mid;
+  } else if (a[mid] < value) {
+    return bsearchInternally(a, mid+1, high, value);
+  } else {
+    return bsearchInternally(a, low, mid-1, value);
+  }
+}
+```
+
+### 7.3. 二分查找应用场景的局限性
+
+1. 二分查找依赖的是顺序表结构，简单点说就是数组。
+
+2. 二分查找针对的是有序数据。
+
+数据必须是有序的。如果数据没有序，我们需要先排序。
+
+二分查找只能用在插入、删除操作不频繁，一次排序多次查找的场景中。针对动态变化的数据集合，二分查找将不再适用。
+
+3. 数据量太小不适合二分查找。
+
+如果要处理的数据量很小，完全没有必要用二分查找，顺序遍历就足够了。比如我们在一个大小为 10 的数组中查找一个元素，不管用二分查找还是顺序遍历，查找速度都差不多。只有数据量比较大的时候，二分查找的优势才会比较明显。
+
+4. 数据量太大也不适合二分查找。
+
+二分查找的底层需要依赖数组这种数据结构，而数组为了支持随机访问的特性，要求内存空间连续，对内存的要求比较苛刻。比如，我们有 1GB 大小的数据，如果希望用数组来存储，那就需要 1GB 的连续内存空间。注意这里的“连续”二字，也就是说，即便有 2GB 的内存空间剩余，但是如果这剩余的 2GB 内存空间都是零散的，没有连续的 1GB 大小的内存空间，那照样无法申请一个 1GB 大小的数组。而我们的二分查找是作用在数组这种数据结构之上的，所以太大的数据用数组存储就比较吃力了，也就不能用二分查找了。
+
+
+### 7.4. 二分查找的变形问题
+
+![二分查找](images/binarySearch3.jpg)
+
+
+1. 变体一：查找第一个值等于给定值的元素
+
+```java
+
+public int bsearch(int[] a, int n, int value) {
+  int low = 0;
+  int high = n - 1;
+  while (low <= high) {
+    int mid = low + ((high - low) >> 1);
+    if (a[mid] >= value) {
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+
+  if (low < n && a[low]==value) return low;
+  else return -1;
+}
+```
+
+另一种实现方式
+
+```java
+
+public int bsearch(int[] a, int n, int value) {
+  int low = 0;
+  int high = n - 1;
+  while (low <= high) {
+    int mid =  low + ((high - low) >> 1);
+    if (a[mid] > value) {
+      high = mid - 1;
+    } else if (a[mid] < value) {
+      low = mid + 1;
+    } else {
+      if ((mid == 0) || (a[mid - 1] != value)) return mid;
+      else high = mid - 1;
+    }
+  }
+  return -1;
+}
+```
+
+2. 查找最后一个值等于给定值的元素
+
+```java
+
+public int bsearch(int[] a, int n, int value) {
+  int low = 0;
+  int high = n - 1;
+  while (low <= high) {
+    int mid =  low + ((high - low) >> 1);
+    if (a[mid] > value) {
+      high = mid - 1;
+    } else if (a[mid] < value) {
+      low = mid + 1;
+    } else {
+      if ((mid == n - 1) || (a[mid + 1] != value)) return mid;
+      else low = mid + 1;
+    }
+  }
+  return -1;
+}
+```
+
+3. 变体三：查找第一个大于等于给定值的元素
+
+```java
+
+public int bsearch(int[] a, int n, int value) {
+  int low = 0;
+  int high = n - 1;
+  while (low <= high) {
+    int mid =  low + ((high - low) >> 1);
+    if (a[mid] >= value) {
+      if ((mid == 0) || (a[mid - 1] < value)) return mid;
+      else high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+  return -1;
+}
+```
+
+4. 查找最后一个小于等于给定值的元素
+
+```java
+
+public int bsearch7(int[] a, int n, int value) {
+  int low = 0;
+  int high = n - 1;
+  while (low <= high) {
+    int mid =  low + ((high - low) >> 1);
+    if (a[mid] > value) {
+      high = mid - 1;
+    } else {
+      if ((mid == n - 1) || (a[mid + 1] > value)) return mid;
+      else low = mid + 1;
+    }
+  }
+  return -1;
+}
+```
+
 
 
 
