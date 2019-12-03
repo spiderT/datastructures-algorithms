@@ -1552,7 +1552,176 @@ public int bsearch7(int[] a, int n, int value) {
 }
 ```
 
+## 8. 跳表
 
+对于一个单链表来讲，即便链表中存储的数据是有序的，如果我们要想在其中查找某个数据，也只能从头到尾遍历链表。这样查找效率就会很低，时间复杂度会很高，是 O(n)。
+
+![跳表](images/skiplist1.jpg)
+
+对链表建立一级“索引”，查找起来是不是就会更快一些呢？每两个结点提取一个结点到上一级，我们把抽出来的那一级叫作索引或索引层。你可以看我画的图。图中的 down 表示 down 指针，指向下一级结点。
+
+![跳表](images/skiplist2.jpg)
+
+
+如果我们现在要查找某个结点，比如 16。我们可以先在索引层遍历，当遍历到索引层中值为 13 的结点时，我们发现下一个结点是 17，那要查找的结点 16 肯定就在这两个结点之间。然后我们通过索引层结点的 down 指针，下降到原始链表这一层，继续遍历。这个时候，我们只需要再遍历 2 个结点，就可以找到值等于 16 的这个结点了。这样，原来如果要查找 16，需要遍历 10 个结点，现在只需要遍历 7 个结点。
+
+从这个例子里，我们看出，加来一层索引之后，查找一个结点需要遍历的结点个数减少了，也就是说查找效率提高了。那如果我们再加一级索引呢？效率会不会提升更多呢？
+
+我们在第一级索引的基础之上，每两个结点就抽出一个结点到第二级索引。现在我们再来查找 16，只需要遍历 6 个结点了，需要遍历的结点数量又减少了。
+
+![跳表](images/skiplist3.jpg)
+
+从图中我们可以看出，原来没有索引的时候，查找 62 需要遍历 62 个结点，现在只需要遍历 11 个结点，
+
+![跳表](images/skiplist4.jpg)
+
+
+这种链表加多级索引的结构，就是跳表.
+
+### 8.1. 用跳表查询到底有多快？
+
+每两个结点会抽出一个结点作为上一级索引的结点，那第一级索引的结点个数大约就是 n/2，第二级索引的结点个数大约就是 n/4，第三级索引的结点个数大约就是 n/8，依次类推，也就是说，第 k 级索引的结点个数是第 k-1 级索引的结点个数的 1/2，那第 k级索引结点的个数就是 n/(2k)。
+
+假设索引有 h 级，最高级的索引有 2 个结点。通过上面的公式，我们可以得到 n/(2h)=2，从而求得 h=log2n-1。如果包含原始链表这一层，整个跳表的高度就是 log2n。我们在跳表中查询某个数据的时候，如果每一层都要遍历 m 个结点，那在跳表中查询一个数据的时间复杂度就是 O(m*logn)。
+
+所以在跳表中查询任意数据的时间复杂度就是 O(logn)。这个查找的时间复杂度跟二分查找是一样的。换句话说，我们其实是基于单链表实现了二分查找。
+
+### 8.2. 跳表是不是很浪费内存？
+
+假设原始链表大小为 n，那第一级索引大约有 n/2 个结点，第二级索引大约有 n/4 个结点，以此类推，每上升一级就减少一半，直到剩下 2 个结点。如果我们把每层索引的结点数写出来，就是一个等比数列。
+
+![跳表](images/skiplist5.jpg)
+
+这几级索引的结点总和就是 n/2+n/4+n/8…+8+4+2=n-2。所以，跳表的空间复杂度是 O(n)。也就是说，如果将包含 n 个结点的单链表构造成跳表，我们需要额外再用接近 n 个结点的存储空间。
+
+如果我们每三个结点或五个结点，抽一个结点到上级索引，是不是就不用那么多索引结点了呢？我画了一个每三个结点抽一个的示意图，你可以看下。
+
+![跳表](images/skiplist6.jpg)
+
+从图中可以看出，第一级索引需要大约 n/3 个结点，第二级索引需要大约 n/9 个结点。每往上一级，索引结点个数都除以 3。为了方便计算，我们假设最高一级的索引结点个数是 1。我们把每级索引的结点个数都写下来，也是一个等比数列。
+
+![跳表](images/skiplist7.jpg)
+
+通过等比数列求和公式，总的索引结点大约就是 n/3+n/9+n/27+…+9+3+1=n/2。尽管空间复杂度还是 O(n)，但比上面的每两个结点抽一个结点的索引构建方法，要减少了一半的索引结点存储空间。实际上，在软件开发中，我们不必太在意索引占用的额外空间。在讲数据结构和算法时，我们习惯性地把要处理的数据看成整数，但是在实际的软件开发中，原始链表中存储的有可能是很大的对象，而索引结点只需要存储关键值和几个指针，并不需要存储对象，所以当对象比索引结点大很多时，那索引占用的额外空间就可以忽略了。
+
+### 8.3. 高效的动态插入和删除
+
+跳表这个动态数据结构，不仅支持查找操作，还支持动态的插入、删除操作，而且插入、删除操作的时间复杂度也是 O(logn)。
+
+对于纯粹的单链表，需要遍历每个结点，来找到插入的位置。但是，对于跳表来说，我们讲过查找某个结点的的时间复杂度是 O(logn)，所以这里查找某个数据应该插入的位置，方法也是类似的，时间复杂度也是 O(logn)。
+
+![跳表](images/skiplist8.jpg)
+
+删除操作。如果这个结点在索引中也有出现，我们除了要删除原始链表中的结点，还要删除索引中的。因为单链表中的删除操作需要拿到要删除结点的前驱结点，然后通过指针操作完成删除。所以在查找要删除的结点的时候，一定要获取前驱结点。当然，如果我们用的是双向链表，就不需要考虑这个问题了。
+
+当我们不停地往跳表中插入数据时，如果我们不更新索引，就有可能出现某 2 个索引结点之间数据非常多的情况。极端情况下，跳表还会退化成单链表。
+
+![跳表](images/skiplist9.jpg)
+
+作为一种动态数据结构，我们需要某种手段来维护索引与原始链表大小之间的平衡，也就是说，如果链表中结点多了，索引结点就相应地增加一些，避免复杂度退化，以及查找、插入、删除操作性能下降。如果你了解红黑树、AVL 树这样平衡二叉树，你就知道它们是通过左右旋的方式保持左右子树的大小平衡（如果不了解也没关系，我们后面会讲），而跳表是通过随机函数来维护前面提到的“平衡性”。当我们往跳表中插入数据的时候，我们可以选择同时将这个数据插入到部分索引层中。如何选择加入哪些索引层呢？我们通过一个随机函数，来决定将这个结点插入到哪几级索引中，比如随机函数生成了值 K，那我们就将这个结点添加到第一级到第 K 级这 K 级索引中。
+
+![跳表](images/skiplist10.jpg)
+
+随机函数的选择很有讲究，从概率上来讲，能够保证跳表的索引大小和数据大小平衡性，不至于性能过度退化。至于随机函数的选择，我就不展开讲解了。如果你感兴趣的话，可以看看我在 GitHub 上的代码或者 Redis 中关于有序集合的跳表实现。
+
+```js
+// 跳表的实现
+/**
+ * author dreamapplehappy
+ * 关于代码的一些解释可以看一下这里：https://github.com/dreamapplehappy/blog/tree/master/2018/12/02
+ */
+
+const MAX_LEVEL = 16;
+
+class Node{
+    data = -1;
+    maxLevel = 0;
+    refer = new Array(MAX_LEVEL);
+}
+
+class SkipList{
+    levelCount = 1;
+    head = new Node();
+
+    static randomLevel() {
+        let level = 1;
+        for(let i = 1; i < MAX_LEVEL; i++) {
+            if(Math.random() < 0.5) {
+                level++;
+            }
+        }
+        return level;
+    }
+
+    insert(value) {
+        const level = SkipList.randomLevel();
+        const newNode = new Node();
+        newNode.data = value;
+        newNode.maxLevel = level;
+        const update = new Array(level).fill(new Node());
+        let p = this.head;
+        for(let i = level - 1; i >= 0; i--) {
+            while(p.refer[i] !== undefined && p.refer[i].data < value) {
+                p = p.refer[i];
+            }
+            update[i] = p;
+        }
+        for(let i = 0; i < level; i++) {
+            newNode.refer[i] = update[i].refer[i];
+            update[i].refer[i] = newNode;
+        }
+        if(this.levelCount < level) {
+            this.levelCount = level;
+        }
+    }
+
+    find(value) {
+        if(!value){return null}
+        let p = this.head;
+        for(let i = this.levelCount - 1; i >= 0; i--) {
+            while(p.refer[i] !== undefined && p.refer[i].data < value) {
+                p = p.refer[i];
+            }
+        }
+
+        if(p.refer[0] !== undefined && p.refer[0].data === value) {
+            return p.refer[0];
+        }
+        return null;
+    }
+
+    remove(value) {
+        let _node;
+        let p = this.head;
+        const update = new Array(new Node());
+        for(let i = this.levelCount - 1; i >= 0; i--) {
+            while(p.refer[i] !== undefined && p.refer[i].data < value){
+                p = p.refer[i];
+            }
+            update[i] = p;
+        }
+
+        if(p.refer[0] !== undefined && p.refer[0].data === value) {
+            _node = p.refer[0];
+            for(let i = 0; i <= this.levelCount - 1; i++) {
+                if(update[i].refer[i] !== undefined && update[i].refer[i].data === value) {
+                    update[i].refer[i] = update[i].refer[i].refer[i];
+                }
+            }
+            return _node;
+        }
+        return null;
+    }
+
+    printAll() {
+        let p = this.head;
+        while(p.refer[0] !== undefined) {
+            // console.log(p.refer[0].data)
+            p = p.refer[0];
+        }
+    }
+}
+```
 
 
 
