@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+
+<body>
+  <script>
+    var PERMS_MIN_LEN = 2;
+    var END_WORD = '$';
+
+    // 将词的每个字都逐一插入Trie树
+    function append(trie, letter, index, array) {
+      var isEndWordLetter = letter === END_WORD;
+      var isLastLetter = index === array.length - 1;
+
+      if (isEndWordLetter && !isLastLetter) {
+        trie[END_WORD] = 1;
+      } else {
+        trie[letter] = trie[letter] || {};
+        trie = trie[letter];
+      }
+
+      if (isLastLetter) {
+        trie[END_WORD] = 1;
+      }
+
+
+      return trie;
+    }
+
+    // 建树
+    function create(input) {
+
+      if (!Array.isArray(input)) {
+        throw (`Expected parameter Array, received ${typeof input}`);
+      }
+
+      var trie = input.reduce((accumulator, item) => {
+        item
+          .toLowerCase()
+          .split('')
+          .reduce(append, accumulator);
+
+        return accumulator;
+      }, {});
+
+      return trie;
+    };
+
+
+    //  获取匹配的词
+    function permutations(letters, trie) {
+
+      if (typeof letters !== 'string') {
+        throw (`Permutations expects string letters, received ${typeof letters}`);
+      }
+
+      var words = [];
+
+      var permute = (word, node, prefix = '') => {
+        var wordIsEmpty = word.length === 0;
+        var wordFound = words.includes(prefix);
+        var endWordFound = node[END_WORD] === 1;
+
+        if (wordIsEmpty && endWordFound && !wordFound) {
+          words.push(prefix);
+        }
+
+        for (var i = 0, len = word.length; i < len; i++) {
+          var letter = word[i];
+
+          if (endWordFound && !words.includes(prefix)) {
+            words.push(prefix);
+          }
+
+          if (node[letter]) {
+            // var remaining = word.substring(0, i) + word.substring(i + 1, len);
+            // 在trie-prefix-tree.js 上的优化
+            var remaining = word.substring(i + 1, len);
+            permute(remaining, node[letter], prefix + letter, words);
+          }
+        }
+
+        // return words.sort();
+        // 在trie-prefix-tree.js 上的优化
+        return words;
+      };
+
+      return permute(letters, trie);
+    };
+
+    // 获取匹配的词
+    function getAnagrams(letters, trie) {
+      if (typeof letters !== 'string') {
+        throw (`Expected string letters, received ${typeof letters}`);
+      }
+
+      if (letters.length < PERMS_MIN_LEN) {
+        return []
+      }
+
+      return permutations(letters, trie);
+    }
+
+
+    var beginTime = +new Date();
+
+    var arr = ['感冒', '咨询', '咳嗽', '肝功能不全', '肾功能不全', '肿瘤', '骨折', '关节病', '关节僵硬', '发热', '扭伤', '疼痛']
+
+    var myTrie = create(arr);
+
+    console.log('myTrie', myTrie);
+
+    var text1 = '我今天一整天感冒发烧咳嗽了';
+
+    var result1 = getAnagrams(text1, myTrie);
+    var result2 = getAnagrams(text2, myTrie);
+
+    var endTime = +new Date();
+    console.log("用时共计" + (endTime - beginTime) + "ms"); // 用时共计112ms  优化后===>用时共计18ms
+
+    console.log('myTrie', myTrie)
+    console.log('result1', result1) // ["感冒", "咳嗽"]
+
+  </script>
+</body>
+
+</html>
